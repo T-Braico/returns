@@ -22,7 +22,9 @@ def about_equals(td: timedelta, target: Enum, threshold=72):
     return abs(h - target.value) < threshold
 
 def average_dividend(symbol):
-    dividends = yf.Ticker(symbol).dividends.sort_index()
+    ticker = yf.Ticker(symbol)
+    current_price = ticker.info['previousClose']
+    dividends = ticker.dividends.sort_index()
 
     payment_dates = pd.Series(dividends.index)
     first_date = payment_dates.iloc[0]
@@ -37,10 +39,15 @@ def average_dividend(symbol):
     if freq is None:
         raise ValueError(f'No frequency matched for average payment time of {avg_freq}')
 
-    return dividends.mean(), freq, first_date, last_date
+    return dividends.mean(), freq, first_date, last_date, current_price
 
 if __name__ == '__main__':
-    symbol = input('Ticker: ')
-    avg_dividend, f, first, last = average_dividend(symbol)
-    print(f'Avg distribution for {symbol} ({first} - {last}):\n\t ${avg_dividend:.2f}')
-    print(f'\tPayed out {f}')
+    while True:
+        try:
+            symbol = input('Ticker: ')
+            avg_dividend, f, first, last, cost_basis = average_dividend(symbol)
+            print(f'\tDividends per Dollar for {symbol} ({format_date(first)} - {format_date(last)})')
+            print(f'\t${avg_dividend / cost_basis:.4f}')
+            print(f'\tPayed out {f.name}')
+        except Exception:
+            print('Try again, lil bro.')
